@@ -1,6 +1,7 @@
 // SmartChat 边缘代理（Cloudflare Pages Advanced Mode）：
 // /api/* 转发智谱大模型（Key 存平台环境变量，不进前端），其余请求走静态资源
-const MODEL = "glm-5.3-flash";
+// 免费模型；图片/PDF 识别需 glm-5.3-flashx（付费），恢复时改回并删除下方拦截
+const MODEL = "glm-4.5-flash";
 const UPSTREAM = "https://open.bigmodel.cn/api/anthropic/v1/messages";
 const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
 
@@ -70,6 +71,22 @@ async function handleChat(request, env) {
   const msgs = body?.messages;
   if (!Array.isArray(msgs) || msgs.length === 0) {
     return json({ detail: "messages 不能为空" }, 400);
+  }
+
+  // 免费文本模型不具备真实图片识别能力（会幻觉作答），图片/PDF 暂时拦截
+  const hasVisionAttachment = msgs.some((m) =>
+    (m.attachments || []).some(
+      (a) => IMAGE_TYPES.has(a.media_type) || a.media_type === "application/pdf"
+    )
+  );
+  if (hasVisionAttachment) {
+    return json(
+      {
+        detail:
+          "当前免费模型暂不支持图片/PDF 识别，请用文字描述题目发送；文本文件（txt/md/csv）不受影响。",
+      },
+      400
+    );
   }
 
   let apiMessages;

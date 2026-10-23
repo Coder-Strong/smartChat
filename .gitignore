@@ -12,3 +12,10 @@ cloudflare-dist/
 # 杂项
 .DS_Store
 gitee-pages/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
